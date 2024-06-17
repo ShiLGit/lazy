@@ -1,0 +1,23 @@
+<config>
+    <projectInfo>
+    <!--DONT NEED THIS SHIT. CAN PARSE FROM ROOT POM ITSELF-->
+        <submodules>
+            <submodule>
+                <groupId>dilian.li</groupId>
+                <artifactId>lol-oracle-server<artifactId>
+            </submodule>
+        </submodules>
+    </projectInfo>
+    <cve>
+        <groupId>org.skyscreamer</groupId>
+        <artifactId>jsonassert</artifactId>
+        <fixVersions>
+            <fixVersion>1.5.1.RC1</fixVersion>
+            <fixVersion>1.6.0</fixVersion>
+            <fixVersion>2.7</fixVersion>
+        </fixVersions>
+        <dependency>
+            <
+        </dependency>
+    </cve>
+</config>

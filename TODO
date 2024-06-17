@@ -1,0 +1,4 @@
+- find way to parse the submodule regex matchers from the poms themsevles 
+- finish the tree reading duhg!!!!!
+- xml reading
+    - tard ass library won't work. try with simpler xml inputs (non pom xml)
