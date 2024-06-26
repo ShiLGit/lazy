@@ -1,23 +1,25 @@
 <config>
-    <projectInfo>
-    <!--DONT NEED THIS SHIT. CAN PARSE FROM ROOT POM ITSELF-->
-        <submodules>
-            <submodule>
-                <groupId>dilian.li</groupId>
-                <artifactId>lol-oracle-server<artifactId>
-            </submodule>
-        </submodules>
-    </projectInfo>
     <cve>
-        <groupId>org.skyscreamer</groupId>
-        <artifactId>jsonassert</artifactId>
+        <!--cve/groupId, cve/artifactId := of the package introducing the CVE itself-->
+        <!--OFC. extract the direct override from immediate child props*...-->
+        <groupId>org.jetbrains</groupId>
+        <artifactId>annotations</artifactId>
         <fixVersions>
-            <fixVersion>1.5.1.RC1</fixVersion>
-            <fixVersion>1.6.0</fixVersion>
-            <fixVersion>2.7</fixVersion>
+            <fixVersion>15.0</fixVersion>
+            <fixVersion>16.0</fixVersion>
+            <fixVersion>24.0</fixVersion>
         </fixVersions>
-        <dependency>
-            <
-        </dependency>
+
+        <!--..*But first check the dependencies list -> is there a way to fix without direct override?-->
+        <!--Add/update these dependencies instead. Priority assigned according to occurrence in list -> first occurence = highest prio-->
+        <dependencies>
+            <dependency>
+                <groupId>org.jetbrains.kotlin</groupId>
+                <artifactId>kotlin-reflect</artifactId>
+                <fixVersions>
+                    <version>1.3.72</version>
+                </fixVersions>
+            </dependency>
+        </dependencies>
     </cve>
 </config>

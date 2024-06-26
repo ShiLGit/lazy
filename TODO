@@ -2,3 +2,9 @@
 - finish the tree reading duhg!!!!!
 - xml reading
     - tard ass library won't work. try with simpler xml inputs (non pom xml)
+
+- IGNORE BELOW UNLESS YOU DON'TKNOW HOW TOA GAET COMMENT DETECIOTN WORKING BUT IT'S AREADY IN YOUR LCEAUP FX
+        -           spaghetti approach for comments?
+            1) Use traditional file IO to read in each line. if encountering comment about "overriding versions" (--> line matches regex), wrap it in an <OVERRIDE> tag so it's queryable by xml --> you know where to insert overriding dependencies when resolving vulns. Then go back and delete the <OVERRIDE> tag when everything is done 
+            NEVERMI
+Look at awaitility... the token mapping != translatiogn GG
