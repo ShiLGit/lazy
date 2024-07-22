@@ -1,0 +1,18 @@
+{
+    "pom.xml": {
+        "io.jsonwebtoken:jjwt": [
+            {
+                "range": ["0.0.0", "1.0.0"],
+                "fixVersion": "0.10.2"
+            },
+            {
+                "range": ["1.0.0", "2.0.0"],
+                "fixVersion": "1.5.0"
+            },
+            {
+                "range": ["2.0.0", "INF"],
+                "fixVersion": "4.0.0"
+            }
+        ]
+    }
+}

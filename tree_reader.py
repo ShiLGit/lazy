@@ -2,7 +2,7 @@ from lxml import etree, objectify
 import os
 import re
 DEBUG = True
-fp = open("./input.txt", "r")
+fp = open("./tree.txt", "r")
 lines = fp.readlines()
 fp.close()
 
@@ -25,7 +25,7 @@ def dprint(arg):
     if DEBUG:
         print("DEBUG: ", arg)
 #proj_root should not be hardcoded but taken as cmdline arg ofc
-def get_submodule_matchers(proj_root = './horrible'):
+def get_submodule_matchers(proj_root = './maven-modular'):
     matchers = []
     for root, dirs, files in os.walk(proj_root):
         if "target" in root: 
@@ -50,30 +50,35 @@ def get_node_key(string):
     dprint("KEY = " + substrs[0] + substrs[1] + substrs[3])
     return substrs[0] + substrs[1] + substrs[3]
 
-# Returns resume index. builds tree from descendant deps of parent arg if any
+# builds tree from descendant deps of parent arg if any
 def scan_module_subtree(lines, start_idx, h_offset, parent, dep_watchlist):
     for i in range(start_idx, len(lines)):
         line = lines[start_idx][h_offset:]
+        print(line)
+
         if line[0] == '@':
-            #REGEX IT SO THAT IT'S JUST GRP:ART:VER? SAFER LOOKUP
-            child = {"children": [],"parent": parent,"dep": line[1:]}
+            dep = get_node_key(line)
+            #TODO: What about duplicate packages?
+            child = {"children": [],"parent": parent,"dep": dep}
             parent['children'].append(child)
             node_map[get_node_key(line)] = child
             #build subtree of the new child
             scan_module_subtree(lines, i + 1, h_offset + 1, child, dep_watchlist)
         elif line[0] == '#':
             #go to line[i-1]; extract the lookup grp:art:ver
-            #add it to the chilre returnedf by the lookup. continue
+            #add it to the chilre of dep returnedf by the lookup. continue
             parent_line = lines[start_idx - 1]
-            parent = node_map[get_node_key(parent_line)]
-            pass 
+            node_prevline = node_map[get_node_key(parent_line)]
+
+            dep = get_node_key(line)
+            child = {"children": [],"parent": parent,"dep": dep}
+            node_prevline['children'].append(child)
+            node_map[get_node_key(line)] = child
         elif line[0] != '$':
             #it's deeper than immediate children. leave up to recursive scanmodsubntree call to eventually process it 
+            # scan_module_subtree(lines, i, h_offset + 1, parent, dep_watchlist)
             pass
  
-
-
-
 def replace_tokens(line):
     index_stop = re.search(rf"[^\s]+\:[^\s]+", line)
     if index_stop == None:
@@ -103,9 +108,13 @@ if __name__ == "__main__":
     scan = False
 
     for i in range(0, len(lines)):
-        line = lines[i]
+        line = lines[i].replace("\n", "")
         treelines = []
         horizontal_scan_max = 0
+        for s in submodule_matchers:
+            print(f"LINE=[{line}]")
+            print(f"\tmatches '{s}': {bool(re.search(s, line))}")
+            print("*******************")
 
         #latter clause is spaghetti for "at least one of submodules present in line. Looking for start of actual dependency tree"
         if "[INFO]" in line and sum([1 if bool(re.search(s, line)) else 0 for s in submodule_matchers]) > 0: 
@@ -139,4 +148,4 @@ if __name__ == "__main__":
             continue
             #dprint("REJECT " + line)
 
-
+    print(treelines)
