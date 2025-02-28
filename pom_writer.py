@@ -12,6 +12,7 @@ def clean_xml_namespaces(root):
         element.tag = etree.QName(element).localname
     etree.cleanup_namespaces(root)
 
+# Given pom xml tree, return a map (property name -> val) of the <properties> section of pom
 def populate_properties_map (xml_root):
     map = dict()
     props = xml_root.find("properties")
@@ -21,6 +22,7 @@ def populate_properties_map (xml_root):
     for p in props.iter(): 
         map[p.tag] = p.text
 
+    del map['properties']
     return map
 
 
@@ -59,10 +61,11 @@ if __name__ == "__main__":
                 continue
 
             ver = ver.text
+            ver_property = None
             # Using a placeholder from properties or hardcoded?
             if re.match(r"\s*\$\{.+\}", ver):
-                key = ver.replace("$", "").replace("{", "").replace("}", "")
-                ver = properties_map.get(key)
+                ver_property = ver.replace("$", "").replace("{", "").replace("}", "")
+                ver = properties_map.get(ver_property)
                 
             target_ver = ""
             # find the range that version falls in
@@ -73,6 +76,11 @@ if __name__ == "__main__":
                 if ver >= lb  and under_ub:
                     target_ver = rule['fixVersion']
                     print(f"GRADUATING {ver} --> {target_ver}")
+                    if ver_property:
+                        props = xml_root.find("properties")
+                        props.find(ver_property).text = target_ver
                     break
 
+    with open("pom_modified.xml", "wb") as fp:
+        xml.write(fp)
     #check <dependencyManagement>
