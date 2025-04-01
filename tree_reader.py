@@ -4,11 +4,17 @@ import re
 from pprint import pprint
 
 
-DEBUG = False
+DEBUG = True
 ENUM_PARENT = "ENUM_PARENT"
 fp = open("./tree.txt", "r", encoding="utf-16", errors="ignore")
 lines = fp.readlines()
 fp.close()
+
+def create_child_node(parent, dep):
+    child = {"children": [],"parent": parent,"dep": dep}
+    parent['children'].append(child)
+    dprint(f'\t[p = {parent['dep']}] New node added {child['dep']}; child of {child['parent']['dep']}')
+    return child
 
 #maps 'groupId:artifactId' to a tree node
 node_map = dict()
@@ -61,22 +67,17 @@ def scan_module_subtree(lines, start_idx, h_offset, parent, dep_watchlist, depth
     dprint(f'****************************CALL FOR SUBTREE OF [p = {parent['dep']}] ***************************************')
     for i in range(start_idx, len(lines)):
         line = lines[i][h_offset:]
-        dprint(f'line:"{lines[i]}";"{line}"')
+        dprint(f'[p = {parent['dep']}] line:"{lines[i]}";"{line}"')
 
         if line[0] == '@': # new 
             dep = get_node_key(line)
             #TODO: What about duplicate packages?
-            child = {"children": [],"parent": parent,"dep": dep}
-            parent['children'].append(child)
-            dprint(f'\t[p = {parent['dep']}] New node added {child['dep']}; child of {child['parent']['dep']}')
+            child = create_child_node(parent, dep)
             node_map[get_node_key(line)] = child
             #build subtree of the new child
             dprint(f'\t[p = {parent['dep']}] building subtree of {child['dep']}')
-            #SPECIAL CASE: \- at same level as current line token. 
-            if lines[i+1][h_offset][0] == '#':
-                scan_module_subtree(lines, i + 1, h_offset, child, dep_watchlist, depth + 1)
             scan_module_subtree(lines, i + 1, h_offset + 1, child, dep_watchlist, depth + 1)
-        elif line[0] == '#': # direct child of above
+        elif line[0] == '#': # direct child of above -------> WHY ISNT THIS DONE RECURSIVELY??? YOULL MISS DEEPER CALLS WTF
             #print('\ndirect child of above detected')
             #go to line[i-1]; extract the lookup grp:art:ver
             #add it to the chilre of dep returnedf by the lookup. continue
@@ -87,16 +88,18 @@ def scan_module_subtree(lines, start_idx, h_offset, parent, dep_watchlist, depth
             #debug shit
             node_prevline = node_map[parent_key]
             dep = get_node_key(line)
+            create_child_node
             child = {"children": [],"parent": parent,"dep": dep}
             node_prevline['children'].append(child)
             node_map[get_node_key(line)] = child
             dprint(f'\t[p = {parent['dep']}] New node added {child['dep']}; child of {child['parent']['dep']}')
-        elif line[0] == '$': # | --> is descendant and | to signify a dep below it is a sibling to something??
+        elif line[0] == '$':
             #it's deeper than immediate children. leave up to recursive scanmodsubntree call to eventually process it 
-            # scan_module_subtree(lines, i, h_offset + 1, parent, dep_watchlist)
             continue
         else:
             dprint(f'\t[p = {parent['dep']}] Base case reached on line "{line}" (no token @/$/#). Terminating')
+            dprint(f'****************************END OF CALL FOR SUBTREE OF [p = {parent['dep']}] ***************************************')
+
             return
  
 def replace_tokens(line):
@@ -109,13 +112,13 @@ def replace_tokens(line):
     mutable = line[0:index_stop]
 
     #Assuming these are special chars that don't shot up as the first char of a dep (y would they??)...
-    mutable = mutable.replace("+-", "@") #NEW
-    mutable = mutable.replace(r"\-", "#") #DIRECT CHILD OF ABOVE?
-    mutable = mutable.replace("|", "$") #SIBLING
+    mutable = mutable.replace("+- ", "@") #NEW
+    mutable = mutable.replace(r"\- ", "#") #DIRECT CHILD OF ABOVE?
+    mutable = mutable.replace("|  ", "$") # (WAS SIBLING). indicate that this line needs to be processed in a deeper recursive call
 
     line = mutable + dont_touch
     line = line.replace("[INFO] ", "")
-    line = line.replace(" ", "")
+    line = line.replace("   ", "$")
     return line.strip()
 
 #[INFO] io.jitpack:module2:jar:2.0-SNAPSHOT
@@ -154,7 +157,10 @@ if __name__ == "__main__":
                 if scan_stop > horizontal_scan_max:
                     horizontal_scan_max = scan_stop
                 i = i + 1
-             
+
+            print("TREELINES START")
+            for l in treelines: print(l)
+            print("TREELINES END ")
             #DO THE TREE SCANNING SHIT
             
             root = {"children": [],"parent": None,"dep": parent_key}
