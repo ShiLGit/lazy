@@ -1,8 +1,12 @@
 from lxml import etree, objectify
 import os
 import re
-DEBUG = True
-fp = open("./tree.txt", "r")
+from pprint import pprint
+
+
+DEBUG = False
+ENUM_PARENT = "ENUM_PARENT"
+fp = open("./tree.txt", "r", encoding="utf-16", errors="ignore")
 lines = fp.readlines()
 fp.close()
 
@@ -17,13 +21,14 @@ def clean_xml_namespaces(root):
 
 def print_tree(depth, node):
     indent = '\t' * depth
-    print(f'{indent}{'' if node['dep'] == None else node['dep']}')
+    print(f'{indent}[{depth}] {node['dep']}')
     for c in node['children']:
         print_tree(depth + 1, c)
 
 def dprint(arg):
     if DEBUG:
         print("DEBUG: ", arg)
+
 #proj_root should not be hardcoded but taken as cmdline arg ofc
 def get_submodule_matchers(proj_root = './maven-modular'):
     matchers = []
@@ -45,39 +50,54 @@ def get_submodule_matchers(proj_root = './maven-modular'):
     return matchers
 
 def get_node_key(string):
-    string = string.replace(" ", "").replace("$", "").replace("#", "").replace("$", "")
+    #dprint(f"\tSTTRING = {string}")
+    string = string.replace(" ", "").replace("$", "").replace("#", "").replace("@", "")
     substrs = string.split(":")
-    dprint("KEY = " + substrs[0] + substrs[1] + substrs[3])
-    return substrs[0] + substrs[1] + substrs[3]
+    #dprint("\tKEY = " + ':'.join([substrs[0], substrs[1]]))
+    return ':'.join(substrs[0:2])
 
 # builds tree from descendant deps of parent arg if any
-def scan_module_subtree(lines, start_idx, h_offset, parent, dep_watchlist):
+def scan_module_subtree(lines, start_idx, h_offset, parent, dep_watchlist, depth = 0):
+    dprint(f'****************************CALL FOR SUBTREE OF [p = {parent['dep']}] ***************************************')
     for i in range(start_idx, len(lines)):
-        line = lines[start_idx][h_offset:]
-        print(line)
+        line = lines[i][h_offset:]
+        dprint(f'line:"{lines[i]}";"{line}"')
 
-        if line[0] == '@':
+        if line[0] == '@': # new 
             dep = get_node_key(line)
             #TODO: What about duplicate packages?
             child = {"children": [],"parent": parent,"dep": dep}
             parent['children'].append(child)
+            dprint(f'\t[p = {parent['dep']}] New node added {child['dep']}; child of {child['parent']['dep']}')
             node_map[get_node_key(line)] = child
             #build subtree of the new child
-            scan_module_subtree(lines, i + 1, h_offset + 1, child, dep_watchlist)
-        elif line[0] == '#':
+            dprint(f'\t[p = {parent['dep']}] building subtree of {child['dep']}')
+            #SPECIAL CASE: \- at same level as current line token. 
+            if lines[i+1][h_offset][0] == '#':
+                scan_module_subtree(lines, i + 1, h_offset, child, dep_watchlist, depth + 1)
+            scan_module_subtree(lines, i + 1, h_offset + 1, child, dep_watchlist, depth + 1)
+        elif line[0] == '#': # direct child of above
+            #print('\ndirect child of above detected')
             #go to line[i-1]; extract the lookup grp:art:ver
             #add it to the chilre of dep returnedf by the lookup. continue
             parent_line = lines[start_idx - 1]
-            node_prevline = node_map[get_node_key(parent_line)]
+            parent_key = get_node_key(parent_line)
+            dprint(f'\t[p = {parent['dep']}] parent key = ' + parent_key)
 
+            #debug shit
+            node_prevline = node_map[parent_key]
             dep = get_node_key(line)
             child = {"children": [],"parent": parent,"dep": dep}
             node_prevline['children'].append(child)
             node_map[get_node_key(line)] = child
-        elif line[0] != '$':
+            dprint(f'\t[p = {parent['dep']}] New node added {child['dep']}; child of {child['parent']['dep']}')
+        elif line[0] == '$': # | --> is descendant and | to signify a dep below it is a sibling to something??
             #it's deeper than immediate children. leave up to recursive scanmodsubntree call to eventually process it 
             # scan_module_subtree(lines, i, h_offset + 1, parent, dep_watchlist)
-            pass
+            continue
+        else:
+            dprint(f'\t[p = {parent['dep']}] Base case reached on line "{line}" (no token @/$/#). Terminating')
+            return
  
 def replace_tokens(line):
     index_stop = re.search(rf"[^\s]+\:[^\s]+", line)
@@ -94,34 +114,32 @@ def replace_tokens(line):
     mutable = mutable.replace("|", "$") #SIBLING
 
     line = mutable + dont_touch
+    line = line.replace("[INFO] ", "")
     line = line.replace(" ", "")
-    line = line.replace("[INFO]", "" )
+    return line.strip()
 
-    return line
-
-
+#[INFO] io.jitpack:module2:jar:2.0-SNAPSHOT
 if __name__ == "__main__":
+    # print(f"FUCK {bool(re.search("\[INFO\]\s*io.jitpack:module2:.+", "[INFO] io.jitpack:module2:jar:2.0-SNAPSHOT"))}")
+    # exit()
     submodule_matchers = get_submodule_matchers()
     dprint(submodule_matchers)
     dep_watchlist = [] #supposed to be parsed from config..
-
     scan = False
 
     for i in range(0, len(lines)):
-        line = lines[i].replace("\n", "")
+        line = lines[i].strip()
         treelines = []
         horizontal_scan_max = 0
-        for s in submodule_matchers:
-            print(f"LINE=[{line}]")
-            print(f"\tmatches '{s}': {bool(re.search(s, line))}")
-            print("*******************")
 
         #latter clause is spaghetti for "at least one of submodules present in line. Looking for start of actual dependency tree"
         if "[INFO]" in line and sum([1 if bool(re.search(s, line)) else 0 for s in submodule_matchers]) > 0: 
+            print("BUILDING TREE FOR " + line)
+            line = line.strip().replace("[INFO] ", "")
+            parent_key = get_node_key(line)
+
+            print("ROOT KEY  = |" + parent_key+ "|")
             scan = True
-            #dprint("ACCEPT " + line)
-            i = i + 1 #increment before entering loop for deranged edge case where i+1 >= len(lines)
-            
             #populate treelines with parseable lines of dependency tree
             while scan == True and i < len(lines): 
                 line = lines[i]
@@ -131,18 +149,18 @@ if __name__ == "__main__":
                     scan = False
                     break
                 line = replace_tokens(line)
-                dprint(line)
                 treelines.append(line)
                 scan_stop = re.search(r"[^\@\$\%]", line).start()
                 if scan_stop > horizontal_scan_max:
                     horizontal_scan_max = scan_stop
                 i = i + 1
-            
-            root = {"children": [],"parent": None,"dep": None}
+             
             #DO THE TREE SCANNING SHIT
+            
+            root = {"children": [],"parent": None,"dep": parent_key}
+            node_map[parent_key] = root
             scan_module_subtree(treelines, 1, 0, root, dep_watchlist)
-            print("TREEEEEEEEEEE")
-            print_tree(-1, root)
+            print_tree(0, root)
         else:
             #print("fk")
             continue
