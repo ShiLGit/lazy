@@ -65,6 +65,12 @@ def get_node_key(string):
 # builds tree from descendant deps of parent arg if any
 def scan_module_subtree(lines, start_idx, h_offset, parent, dep_watchlist, depth = 0):
     dprint(f'****************************CALL FOR SUBTREE OF [p = {parent['dep']}] ***************************************')
+    #First line after parent line begins with # - direct child. Sometimes \- will be on same level as parent line so need to cover with first clause 
+    if lines[start_idx][0] == '#' or lines[start_idx][h_offset:][0] == '#':
+        dep = get_node_key(lines[start_idx])
+        child = create_child_node(parent, dep)
+        scan_module_subtree(lines, start_idx + 1, h_offset, child, dep_watchlist, depth = 0)
+
     for i in range(start_idx, len(lines)):
         line = lines[i][h_offset:]
         dprint(f'[p = {parent['dep']}] line:"{lines[i]}";"{line}"')
@@ -77,22 +83,6 @@ def scan_module_subtree(lines, start_idx, h_offset, parent, dep_watchlist, depth
             #build subtree of the new child
             dprint(f'\t[p = {parent['dep']}] building subtree of {child['dep']}')
             scan_module_subtree(lines, i + 1, h_offset + 1, child, dep_watchlist, depth + 1)
-        elif line[0] == '#': # direct child of above -------> WHY ISNT THIS DONE RECURSIVELY??? YOULL MISS DEEPER CALLS WTF
-            #print('\ndirect child of above detected')
-            #go to line[i-1]; extract the lookup grp:art:ver
-            #add it to the chilre of dep returnedf by the lookup. continue
-            parent_line = lines[start_idx - 1]
-            parent_key = get_node_key(parent_line)
-            dprint(f'\t[p = {parent['dep']}] parent key = ' + parent_key)
-
-            #debug shit
-            node_prevline = node_map[parent_key]
-            dep = get_node_key(line)
-            create_child_node
-            child = {"children": [],"parent": parent,"dep": dep}
-            node_prevline['children'].append(child)
-            node_map[get_node_key(line)] = child
-            dprint(f'\t[p = {parent['dep']}] New node added {child['dep']}; child of {child['parent']['dep']}')
         elif line[0] == '$':
             #it's deeper than immediate children. leave up to recursive scanmodsubntree call to eventually process it 
             continue
