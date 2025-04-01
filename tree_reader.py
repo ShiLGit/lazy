@@ -66,7 +66,9 @@ def get_node_key(string):
 def scan_module_subtree(lines, start_idx, h_offset, parent, dep_watchlist, depth = 0):
     dprint(f'****************************CALL FOR SUBTREE OF [p = {parent['dep']}] ***************************************')
     #First line after parent line begins with # - direct child. Sometimes \- will be on same level as parent line so need to cover with first clause 
-    if lines[start_idx][0] == '#' or lines[start_idx][h_offset:][0] == '#':
+    print(f"WHAT THE FUCK. '{lines[start_idx][h_offset:]}'")
+    if lines[start_idx][h_offset-1] == '#' or lines[start_idx][h_offset:][0] == '#':
+        
         dep = get_node_key(lines[start_idx])
         child = create_child_node(parent, dep)
         scan_module_subtree(lines, start_idx + 1, h_offset, child, dep_watchlist, depth = 0)
