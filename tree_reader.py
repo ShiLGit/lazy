@@ -31,9 +31,9 @@ def print_tree(depth, node):
     for c in node['children']:
         print_tree(depth + 1, c)
 
-def dprint(arg):
+def dprint(arg, parent = None):
     if DEBUG:
-        print("DEBUG: ", arg)
+        print(f"DEBUG: {f'[p = {parent['dep']}]' if parent else ''}", arg)
 
 #proj_root should not be hardcoded but taken as cmdline arg ofc
 def get_submodule_matchers(proj_root = './maven-modular'):
@@ -66,12 +66,19 @@ def get_node_key(string):
 def scan_module_subtree(lines, start_idx, h_offset, parent, dep_watchlist, depth = 0):
     dprint(f'****************************CALL FOR SUBTREE OF [p = {parent['dep']}] ***************************************')
     #First line after parent line begins with # - direct child. Sometimes \- will be on same level as parent line so need to cover with first clause 
-    print(f"WHAT THE FUCK. '{lines[start_idx][h_offset:]}'")
-    if lines[start_idx][h_offset-1] == '#' or lines[start_idx][h_offset:][0] == '#':
-        
+    if start_idx >= len(lines):
+        dprint("Line index > len(lines); terminating", parent)
+        return
+
+    dprint(f"OFFSET LINE '{lines[start_idx][h_offset:]}'")
+
+    if lines[start_idx][h_offset-1] == '#'or lines[start_idx][h_offset:][0] == '#':
+        h_offset_incr = 0 if lines[start_idx][h_offset-1] == '#' else 1
+        dprint(f"HOFFSET= {h_offset_incr}", parent )
         dep = get_node_key(lines[start_idx])
         child = create_child_node(parent, dep)
-        scan_module_subtree(lines, start_idx + 1, h_offset, child, dep_watchlist, depth = 0)
+        dprint(f"edge case reached; calling subtree search for child {child['dep']}; hoffs={h_offset} ;hoffseti={h_offset_incr}", parent)
+        scan_module_subtree(lines, start_idx + 1, h_offset + h_offset_incr, child, dep_watchlist, depth = 0)
 
     for i in range(start_idx, len(lines)):
         line = lines[i][h_offset:]
@@ -87,6 +94,7 @@ def scan_module_subtree(lines, start_idx, h_offset, parent, dep_watchlist, depth
             scan_module_subtree(lines, i + 1, h_offset + 1, child, dep_watchlist, depth + 1)
         elif line[0] == '$':
             #it's deeper than immediate children. leave up to recursive scanmodsubntree call to eventually process it 
+            dprint(f"skipping processing for {line} to wait for rescursive calls", parent)
             continue
         else:
             dprint(f'\t[p = {parent['dep']}] Base case reached on line "{line}" (no token @/$/#). Terminating')
