@@ -2,13 +2,11 @@ from lxml import etree, objectify
 import os
 import re
 from pprint import pprint
-
+import subprocess
 
 DEBUG = True
 ENUM_PARENT = "ENUM_PARENT"
-fp = open("./tree.txt", "r", encoding="utf-16", errors="ignore")
-lines = fp.readlines()
-fp.close()
+
 
 def create_child_node(parent, dep):
     child = {"children": [],"parent": parent,"dep": dep}
@@ -36,7 +34,7 @@ def dprint(arg, parent = None):
         print(f"DEBUG: {f'[p = {parent['dep']}]' if parent else ''}", arg)
 
 #proj_root should not be hardcoded but taken as cmdline arg ofc
-def get_submodule_matchers(proj_root = './maven-modular'):
+def get_submodule_matchers(proj_root):
     matchers = []
     for root, dirs, files in os.walk(proj_root):
         if "target" in root: 
@@ -121,12 +119,16 @@ def replace_tokens(line):
     line = line.replace("   ", "$")
     return line.strip()
 
-#[INFO] io.jitpack:module2:jar:2.0-SNAPSHOT
-if __name__ == "__main__":
-    # print(f"FUCK {bool(re.search("\[INFO\]\s*io.jitpack:module2:.+", "[INFO] io.jitpack:module2:jar:2.0-SNAPSHOT"))}")
-    # exit()
-    submodule_matchers = get_submodule_matchers()
-    dprint(submodule_matchers)
+# THIS IS NOT COMPLETE U IDIOT. JUST PORTED LINES FROM MAIN(). WHO KNOWS
+# NEEDS RETURN VALUE AND NEEDS TO ACCEPT NON HARDCODED ARGS TO FIND WHICH TREE TO CHECK
+def get_tree(proj_root = './maven-modular'):
+
+    #HARDCODED?? WTF.
+    fp = open("./tree.txt", "r", encoding="utf-16", errors="ignore")
+    lines = fp.readlines()
+    fp.close()
+    submodule_matchers = get_submodule_matchers(proj_root)
+    #print(submodule_matchers)
     dep_watchlist = [] #supposed to be parsed from config..
     scan = False
 
@@ -173,3 +175,21 @@ if __name__ == "__main__":
             #dprint("REJECT " + line)
 
     print(treelines)
+
+# Given config + tree, determine if all cves are covered (return T/F)
+def validate_tree(config_path = './config.json'):
+    print(f'[STATUS] ~~~~~~~~~~~~~~~~~~~~~~~~ RUNNING MVN DEPENDENCY:TREE ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+    fp = open("./tree.txt", "r", encoding="utf-16", errors="ignore")
+    cmd = subprocess.run(['mvn', 'dependency:tree'], shell = True, stdout = fp)
+    print(f'{'[ERROR] MVN DEPENDENCY:TREE FAILED!!! ' if cmd.returncode != 0 else '[STATUS] MVN DEPENDENCY:TREE COMPLETED SUCCESSFULLY'}')
+    lines = fp.readlines()
+    fp.close()
+    return lines
+
+    return True
+#[INFO] io.jitpack:module2:jar:2.0-SNAPSHOT
+if __name__ == "__main__":
+    # print(f"FUCK {bool(re.search("\[INFO\]\s*io.jitpack:module2:.+", "[INFO] io.jitpack:module2:jar:2.0-SNAPSHOT"))}")
+    # exit()
+    validate_tree()
+   # get_tree()
