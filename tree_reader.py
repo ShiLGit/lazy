@@ -3,19 +3,22 @@ import os
 import re
 from pprint import pprint
 import subprocess
-
-DEBUG = True
+import json
+from utils import version_comp, LT, GT, EQ
+DEBUG = False
 ENUM_PARENT = "ENUM_PARENT"
 
 
-def create_child_node(parent, dep):
-    child = {"children": [],"parent": parent,"dep": dep}
+def create_child_node(parent, dep, ver, node_map):
+    child = {"children": [],"parent": parent,"dep": dep, "version": ver}
     parent['children'].append(child)
+    node_map[dep] = child
+    #TODO: need to cover possibility of multiple <grpId>:<artId> occurrences in the tree.
+    #Possible approach: child = shortest path to a root node? (since we're using nodemap to eventually determine distance and whether dep needs an override or parent update) 
+    # assuming this doesn't interfere with tree generation
     dprint(f'\t[p = {parent['dep']}] New node added {child['dep']}; child of {child['parent']['dep']}')
     return child
 
-#maps 'groupId:artifactId' to a tree node
-node_map = dict()
 def clean_xml_namespaces(root):
     for element in root.getiterator():
         if isinstance(element, etree._Comment):
@@ -53,15 +56,16 @@ def get_submodule_matchers(proj_root):
                 print(f"Exception - tag not found in {root}/pom.xml: \n", e )
     return matchers
 
+# Given a string from tree outputted by mvn dependency:tree (post token replacement), return (artifactId:grpId, packageVersion)
 def get_node_key(string):
     #dprint(f"\tSTTRING = {string}")
     string = string.replace(" ", "").replace("$", "").replace("#", "").replace("@", "")
     substrs = string.split(":")
     #dprint("\tKEY = " + ':'.join([substrs[0], substrs[1]]))
-    return ':'.join(substrs[0:2])
+    return (':'.join(substrs[0:2]), substrs[3])
 
 # builds tree from descendant deps of parent arg if any
-def scan_module_subtree(lines, start_idx, h_offset, parent, dep_watchlist, depth = 0):
+def scan_module_subtree(lines, start_idx, h_offset, parent, dep_watchlist, node_map, depth = 0):
     dprint(f'****************************CALL FOR SUBTREE OF [p = {parent['dep']}] ***************************************')
     #First line after parent line begins with # - direct child. Sometimes \- will be on same level as parent line so need to cover with first clause 
     if start_idx >= len(lines):
@@ -73,23 +77,23 @@ def scan_module_subtree(lines, start_idx, h_offset, parent, dep_watchlist, depth
     if lines[start_idx][h_offset-1] == '#'or lines[start_idx][h_offset:][0] == '#':
         h_offset_incr = 0 if lines[start_idx][h_offset-1] == '#' else 1
         dprint(f"HOFFSET= {h_offset_incr}", parent )
-        dep = get_node_key(lines[start_idx])
-        child = create_child_node(parent, dep)
+        dep, ver = get_node_key(lines[start_idx])
+        child = create_child_node(parent, dep, ver, node_map)
         dprint(f"edge case reached; calling subtree search for child {child['dep']}; hoffs={h_offset} ;hoffseti={h_offset_incr}", parent)
-        scan_module_subtree(lines, start_idx + 1, h_offset + h_offset_incr, child, dep_watchlist, depth = 0)
+        scan_module_subtree(lines, start_idx + 1, h_offset + h_offset_incr, child, dep_watchlist, node_map, depth = 0)
 
     for i in range(start_idx, len(lines)):
         line = lines[i][h_offset:]
         dprint(f'[p = {parent['dep']}] line:"{lines[i]}";"{line}"')
 
         if line[0] == '@': # new 
-            dep = get_node_key(line)
+            dep, ver = get_node_key(line)
             #TODO: What about duplicate packages?
-            child = create_child_node(parent, dep)
-            node_map[get_node_key(line)] = child
+            child = create_child_node(parent, dep, ver, node_map)
+            node_map[dep] = child
             #build subtree of the new child
             dprint(f'\t[p = {parent['dep']}] building subtree of {child['dep']}')
-            scan_module_subtree(lines, i + 1, h_offset + 1, child, dep_watchlist, depth + 1)
+            scan_module_subtree(lines, i + 1, h_offset + 1, child, dep_watchlist, node_map, depth + 1)
         elif line[0] == '$':
             #it's deeper than immediate children. leave up to recursive scanmodsubntree call to eventually process it 
             dprint(f"skipping processing for {line} to wait for rescursive calls", parent)
@@ -121,17 +125,12 @@ def replace_tokens(line):
 
 # THIS IS NOT COMPLETE U IDIOT. JUST PORTED LINES FROM MAIN(). WHO KNOWS
 # NEEDS RETURN VALUE AND NEEDS TO ACCEPT NON HARDCODED ARGS TO FIND WHICH TREE TO CHECK
-def get_tree(proj_root = './maven-modular'):
-
-    #HARDCODED?? WTF.
-    fp = open("./tree.txt", "r", encoding="utf-16", errors="ignore")
-    lines = fp.readlines()
-    fp.close()
-    submodule_matchers = get_submodule_matchers(proj_root)
-    #print(submodule_matchers)
+def parse_trees(lines, submodule_matchers):
+    #maps 'groupId:artifactId' to a tree node
+    node_map = dict()
     dep_watchlist = [] #supposed to be parsed from config..
     scan = False
-
+    module_trees = []
     for i in range(0, len(lines)):
         line = lines[i].strip()
         treelines = []
@@ -139,11 +138,11 @@ def get_tree(proj_root = './maven-modular'):
 
         #latter clause is spaghetti for "at least one of submodules present in line. Looking for start of actual dependency tree"
         if "[INFO]" in line and sum([1 if bool(re.search(s, line)) else 0 for s in submodule_matchers]) > 0: 
-            print("BUILDING TREE FOR " + line)
+            dprint("BUILDING TREE FOR " + line)
             line = line.strip().replace("[INFO] ", "")
-            parent_key = get_node_key(line)
+            parent_key, parent_ver = get_node_key(line)
 
-            print("ROOT KEY  = |" + parent_key+ "|")
+            dprint("ROOT KEY  = |" + parent_key+ "|")
             scan = True
             #populate treelines with parseable lines of dependency tree
             while scan == True and i < len(lines): 
@@ -160,36 +159,63 @@ def get_tree(proj_root = './maven-modular'):
                     horizontal_scan_max = scan_stop
                 i = i + 1
 
-            print("TREELINES START")
-            for l in treelines: print(l)
-            print("TREELINES END ")
-            #DO THE TREE SCANNING SHIT
+            dprint("TREELINES START")
+            for l in treelines: dprint(l)
+            dprint("TREELINES END ")
             
-            root = {"children": [],"parent": None,"dep": parent_key}
+            root = {"children": [],"parent": None,"dep": parent_key, "version": parent_ver}
             node_map[parent_key] = root
-            scan_module_subtree(treelines, 1, 0, root, dep_watchlist)
+            scan_module_subtree(treelines, 1, 0, root, dep_watchlist, node_map)
             print_tree(0, root)
+            module_trees.append(root)
         else:
-            #print("fk")
             continue
-            #dprint("REJECT " + line)
 
-    print(treelines)
+    return (module_trees, node_map)
 
-# Given config + tree, determine if all cves are covered (return T/F)
-def validate_tree(config_path = './config.json'):
-    print(f'[STATUS] ~~~~~~~~~~~~~~~~~~~~~~~~ RUNNING MVN DEPENDENCY:TREE ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+# Generate tree given the path to the root of the maven project
+def generate_tree_from_scratch(proj_root ='./maven-modular'):
+
+    #Get lines to parse
+    #print(f'[STATUS] ~~~~~~~~~~~~~~~~~~~~~~~~ RUNNING MVN DEPENDENCY:TREE ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
     fp = open("./tree.txt", "r", encoding="utf-16", errors="ignore")
-    cmd = subprocess.run(['mvn', 'dependency:tree'], shell = True, stdout = fp)
-    print(f'{'[ERROR] MVN DEPENDENCY:TREE FAILED!!! ' if cmd.returncode != 0 else '[STATUS] MVN DEPENDENCY:TREE COMPLETED SUCCESSFULLY'}')
+    #cmd = subprocess.run(['mvn', 'dependency:tree'], shell = True, stdout = fp)
+    #print(f'{'[ERROR] MVN DEPENDENCY:TREE FAILED!!! ' if cmd.returncode != 0 else '[STATUS] MVN DEPENDENCY:TREE COMPLETED SUCCESSFULLY'}')
     lines = fp.readlines()
     fp.close()
-    return lines
 
-    return True
+    #get submodule names 
+    submodule_matchers = get_submodule_matchers(proj_root)
+    return parse_trees(lines, submodule_matchers)
+
+# Given config + tree, return list of non-covered cves' profiles
+def get_cve_nodes(node_map, config_path):
+    config = None
+    cve_nodes = []
+    with open(config_path) as fp:
+        config = json.loads(fp.read())["pom.xml"]
+    
+    problem_pkgs = config.keys()
+    for pkg in problem_pkgs:
+        pkg_node = node_map.get(pkg)
+        # grpId:artId matches something in config; check if version is a target one and add to list if yes
+        if  pkg_node != None: 
+            for fix in config[pkg]:
+                lower_bound, upper_bound = fix['range']
+                lb_comparison = version_comp(pkg_node['version'], lower_bound)
+                ub_comparison = version_comp(pkg_node['version'], upper_bound)
+                # "if current version <= upper bound && current version >= lower bound..."
+                if (lb_comparison == GT or lb_comparison == EQ) and (ub_comparison == LT or ub_comparison == EQ):
+                    cve_nodes.append(pkg_node)
+
+    return cve_nodes
+            
 #[INFO] io.jitpack:module2:jar:2.0-SNAPSHOT
 if __name__ == "__main__":
     # print(f"FUCK {bool(re.search("\[INFO\]\s*io.jitpack:module2:.+", "[INFO] io.jitpack:module2:jar:2.0-SNAPSHOT"))}")
     # exit()
-    validate_tree()
+    (trees, node_map) = generate_tree_from_scratch('./maven-modular')
+    #..when will you ever use tree
+    print('fuckkk')
+    print(get_cve_nodes(node_map, './config.json'))
    # get_tree()
