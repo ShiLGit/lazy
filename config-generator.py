@@ -164,9 +164,3 @@ for pkg in df['Component'].unique():
     x = generate_versionmap(pkg_df)
     pprint.pprint(x)
     final_config['pom.xml'][pkg] = x
-    
-
-# NEED RULES
-# CROSS-UPDATE MINOR VERSIONS? -> PRINT WARNING IF THERE'S NO ALTERNATIVE
-# PATCH VERSIONS ARE ALWAYS OK 
-# CROSS UPDATE MAJOR VERSIONS? -> PRINT SERIOUS WARNING IF THERE'S NO ALTERNATIVE (prompt for proceed?)
