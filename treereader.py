@@ -10,9 +10,7 @@ art_nodemap = dict()
 LINE_RE= re.compile(r'\s*"([^"]+)" -> "([^"]+)"')
 SCOPES = re.compile(r'compile|test|runtime|provided|system')
 
-lines = []
-with open('./treed.dot') as fp:
-    lines = fp.readlines()
+
 
 
 # parse raw dotgraph string into map of actual values
@@ -88,20 +86,28 @@ def process_line(line):
 
     # print(f"{parent_str} -> {node}")
 
-# parse tree 
-root_key = re.search(r'\s*digraph\s*"(.+)"\s*{', lines[0]).groups()[0]
-print(root_key)
-for l in lines: 
-    if LINE_RE.search(l.strip()) != None:    
-        node = process_line(l)
-    else:
-        print(f"No matches made for line '{l}'")
+# Given dotgraph filename, parse into tree and return root + map of artifactId -> node
+def get_tree(fname = 'treed.dot'):
+    lines = []
+    with open(fname) as fp:
+        lines = fp.readlines()
 
-root = nodemap.get(root_key)
-#print_tree(root)
-#pprint.pprint(art_nodemap.keys())
+    # parse tree 
+    root_key = re.search(r'\s*digraph\s*"(.+)"\s*{', lines[0]).groups()[0]
+    print(root_key)
+    for l in lines: 
+        if LINE_RE.search(l.strip()) != None:    
+            node = process_line(l)
+        else:
+            print(f"No matches made for line '{l}'")
 
-# TEST IF ALL ARTIFACTS OCCUR IN ARTNODEMAP
+    root = nodemap.get(root_key)
+    #print_tree(root)
+    #pprint.pprint(art_nodemap.keys())
+
+    return (root, art_nodemap)
+
+# TEST IF ALL ARTIFACTS OCCUR IN ARTNODEMAP. DELETE THIS LATER JUST LOCAL TESTING 
 def test_artnodemap():
     allmatches = re.finditer(r'"[^:"]+:([^:"]+):[^->]+" -> "[^:"]+:([^:"]+):.+"', "\n".join(lines))
     for match in allmatches:
