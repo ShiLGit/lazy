@@ -4,7 +4,7 @@ import re
 from pprint import pprint
 import subprocess
 import json
-from utils import version_comp, LT, GT, EQ
+
 DEBUG = False
 ENUM_PARENT = "ENUM_PARENT"
 

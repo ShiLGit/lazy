@@ -3,6 +3,7 @@ from packaging.version import parse, Version, InvalidVersion
 import re
 from rich import print
 import pprint
+import json
 MAJOR = 'MAJOR'
 MINOR = 'MINOR'
 PATCH = 'PATCH'
@@ -102,7 +103,7 @@ def generate_versionmap(rows):
         universal_fixes = universal_fixes.intersection(cvemap[cve])
     
 
-    print(f"afv = {all_fv}")
+    #print(f"afv = {all_fv}")
     universal_fixes.add(max(all_fv, key=parse)) # also need to add the max existing fix version
     #print(cvemap)
     #print(f"cvers {cvers}")
@@ -157,10 +158,12 @@ df = df[df['Package Type'] == 'maven']
 final_config = {'pom.xml': dict()}
 
 rows = df[df['Component'] == 'netty-handler']
-print(df['Component'].unique())
 for pkg in df['Component'].unique():
     pkg_df = df[df['Component'] == pkg]
 
     x = generate_versionmap(pkg_df)
-    pprint.pprint(x)
-    final_config['pom.xml'][pkg] = x
+    final_config['pom.xml'][pkg] = x[pkg]
+
+pprint.pprint(final_config)
+with open('./config.json', 'w') as fp:
+    json.dump(final_config, fp)
