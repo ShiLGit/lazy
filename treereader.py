@@ -10,9 +10,6 @@ art_nodemap = dict()
 LINE_RE= re.compile(r'\s*"([^"]+)" -> "([^"]+)"')
 SCOPES = re.compile(r'compile|test|runtime|provided|system')
 
-
-
-
 # parse raw dotgraph string into map of actual values
 def parse_values(str):
     retVal = dict()
@@ -39,7 +36,6 @@ def print_tree(node, depth=0):
     print(f'{indent}{node['value']}')
     for c in node['children']:
         print_tree(c, depth + 1)
-
 
 # creates nodes, populates nodemap according to line
 def process_line(line):
