@@ -17,14 +17,13 @@ def process_dependencies(dependencies, artId, fixVersion):
         if dep_artId == artId:
             ver_el = dep.find('m:version', ns).text
 
-            # version is set as a property. process accordingly
+            # is version is set as a property? process accordingly
             version_match = PLACEHOLDER_RE.search(ver_el.text)
             if version_match:
                 property_name = version_match.group(1)
                 prop_el = root.find(f'm:properties/m:{property_name}', ns)
                 prop_el.text = fixVersion
                 dependency_found = True
-
             else: 
                 ver_el.text = fixVersion
                 dependency_found = True
@@ -65,19 +64,18 @@ def update_artifact(root, artId, fixVersion):
     return deps_updated and depmgmt_updated
 
 def get_all_dependencies(root):
-    depmgmt= root.findall('m:dependencyManagement/m:dependencies/m:dependency', ns) 
-    dependencies = root.findall('m:dependencies/m:dependency', ns)
-        
+    depmgmt= root.findall('m:dependencyManagement/m:dependencies/m:dependency', ns)  or []
+    dependencies = root.findall('m:dependencies/m:dependency', ns) or []
+    dependencies.extend(depmgmt)
+    
     all_deps = set([])
-    if depmgmt != None: 
-        for dep in depmgmt:
-            all_deps.add(dep.find('m:artifactId', ns).text)
-
-    if dependencies != None: 
-        for dep in depmgmt:
+    for dep in dependencies:
             all_deps.add(dep.find('m:artifactId', ns).text)
 
     return all_deps
+
+
+# for testing this script only 
 if __name__ == '__main__':
     tree = ET.parse('./runtime/pom.xml')
     root = tree.getroot()
