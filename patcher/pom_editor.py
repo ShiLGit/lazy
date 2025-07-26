@@ -63,14 +63,32 @@ def update_artifact(root, artId, fixVersion):
 
     return deps_updated and depmgmt_updated
 
-def get_all_dependencies(root):
+# NOTE: VERSIONLESS DECLARATIONS NOT INCLUDED
+def get_declared_dependencies(root):
     depmgmt= root.findall('m:dependencyManagement/m:dependencies/m:dependency', ns)  or []
     dependencies = root.findall('m:dependencies/m:dependency', ns) or []
     dependencies.extend(depmgmt)
-    
-    all_deps = set([])
+
+    all_deps = list([])
     for dep in dependencies:
-            all_deps.add(dep.find('m:artifactId', ns).text)
+            to_add = dict()
+            to_add['artId'] = dep.find('m:artifactId', ns).text
+            ver_el = dep.find('m:version', ns)
+
+            # don't add as declared dep because no version specified?
+            if ver_el == None:
+                continue 
+
+            # is version is set as a property? process accordingly
+            version_match = PLACEHOLDER_RE.search(ver_el.text)
+            if version_match:
+                property_name = version_match.group(1)
+                prop_el = root.find(f'm:properties/m:{property_name}', ns)
+                to_add['version'] = prop_el.text
+            else: 
+                to_add = ver_el.text
+            
+            all_deps.append(to_add)
 
     return all_deps
 
