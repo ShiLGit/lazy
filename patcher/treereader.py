@@ -99,7 +99,11 @@ def get_tree(fname = 'treed.dot'):
     return (root, art_nodemap)
 
 # TEST IF ALL ARTIFACTS OCCUR IN ARTNODEMAP. DELETE THIS LATER JUST LOCAL TESTING 
-def test_artnodemap():
+def test_artnodemap(fname):
+    lines = []
+    with open(fname) as fp:
+        lines = fp.readlines()
+
     allmatches = re.finditer(r'"[^:"]+:([^:"]+):[^->]+" -> "[^:"]+:([^:"]+):.+"', "\n".join(lines))
     for match in allmatches:
         for art in match.groups():
