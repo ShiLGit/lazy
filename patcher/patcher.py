@@ -1,6 +1,6 @@
 from treereader import get_tree, print_tree, parse_values
 import configparser
-from configgenerator import prompt_until_valid
+from configgenerator import prompt_until_valid, generate_config
 import sys
 import os 
 import subprocess
@@ -25,9 +25,9 @@ tree, nodemap = get_tree(tfname)
 #print_tree(tree)
 
 #build a config 
-# generate_new = configgenerator.prompt_until_valid('Generate a new config? (y/n): ', ['Y', 'y', 'N','n'])
-# if generate_new.upper() == 'Y':
-#     configgenerator.generate_config(rfname, cfname)
+generate_new = prompt_until_valid('Generate a new config? (y/n): ', lambda inpt : inpt in ['Y', 'y', 'N','n'])
+if generate_new.upper() == 'Y':
+    generate_config(rfname, cfname)
 config = None
 with open(cfname, 'r') as file:
     config = json.load(file)
@@ -51,6 +51,7 @@ for vuln_art in pomconfig.keys():
         print(f'\tSearching for artifact = {vuln_art}; nodemap keys = {nodemap.keys()}')
         break
 
+
     for node in nodes:
         # search itself and up to all ancestors for presence in pom.xml        
         while node.get('parent'):
@@ -66,10 +67,11 @@ for vuln_art in pomconfig.keys():
                 fixVersion = versionmatched_config['fixVersion']
             else:
                 # TODO: mvncentral fetcher this instead of making user save. Also ask if this should be cached in the config for future us
-                fixVersion = prompt_until_valid(f"An ancestor '{node_vals['artId']}' of vulnerable pkg '{vuln_art}' was detected in the pom but no configurations exist for it. Enter a fix version yourself: ", lambda input: True)
+                fixVersion = prompt_until_valid(f"An ancestor '{node_vals['artId']}' of vulnerable pkg '{vuln_art}' was detected in the pom but no configurations exist for it. Enter a fix version yourself: ", lambda input: len(input) > 0)
 
-            print(f'Updating {node_vals['artId']}@{node_vals['version']} -> {fixVersion}')
-            PE.update_artifact(root, node_vals['artId'], fixVersion)
+            if fixVersion:
+                print(f'Updating {node_vals['artId']}@{node_vals['version']} -> {fixVersion}')
+                PE.update_artifact(root, node_vals['artId'], fixVersion)
             node = node.get('parent')
     
     print('\n\n')

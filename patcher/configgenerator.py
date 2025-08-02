@@ -70,7 +70,7 @@ def prompt_until_valid(prompt_text, validator):
         if validator(inpt):
             return inpt 
         else: 
-            print(f"\t[red]'{inpt}' is not among the available valid options [/red]")
+            print(f"\t[red]'{inpt}' is not a valid input [/red]")
 
 # rows: subset of cve df where all rows are associated with the same package
 # returns: map of version range -> fix version associated with pkg, where version range covers all exisitng current versions

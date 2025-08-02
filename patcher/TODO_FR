@@ -1,0 +1,42 @@
+6-14 
+ - QA your script. there's stupid ass mend edge case you haven't addressed 
+ - configs for pom_writer need to work with a currentVersion key too now, not just a range key 
+    - also need to address how keys are grpId:artId when report only has artId available
+
+6-29 
+- treereader now looks good, config-generator now looks good. 
+- logic for patching?? we do not want to override indefinitely when we can update parent dependencies 
+- does there exist a maven repo API. Try to retrieve parent dependency versions -> does there exist a newer one that will bring in to date transitive dependencies? 
+- set up some fake inputs from your maven-modular proj so can mock actual workflow with these scripts
+
+LOGIC? 
+1) parse the configs, parse the tree 
+2) scour tree for the bad packages (localize to project instead of global bs eventually? will make quicker search)
+3) for each bad package, check if a child dependency (depth > 1)
+    - no: override directly. it should be in the pom
+    - yes: try to override the ancestor dependency actually declared in the pom. check if it fixes. if not, override directly. ALSO CHECK IF ANY MORE RECENT ANCESTOR DEPENDENCIES HAVE OVERRIDES. e.g. root -> declared dependency -> intermediate dependency -> bad package; check if intermediate dependency has a direct override and do same 
+
+07-05
+LOGIC II? 
+1) map projname to dir that it lives in on your computer (some config.json or other env file probably)
+2) parse from report which rows are associated with with proj and only address those ofc 
+3) workflow from above
+
+07-12
+Small todo in patcher.py > config generate step: errorhandling - don't accept or don't prompt if there doesn't exist a config.json anyways
+HIGH P: finish pom_editor util
+
+07-19
+pom_editor utils added. now can work on basic flow in patcher from 07-05
+URGENT: TREEREADER IS ADDING STRINGS TO ART_NODEMAP? it's supposed dto be a list of node
+
+07-26
+fixed bugs. proceed with patcher flwo
+
+08-02 
+- fix flow of aptching becaise whole thing can just be a search of entire dependency tree rahter than like 3 cases
+- need to validate whether ancestor updates have actually fixed the target package 
+    -FLOW? 
+    1) mvn help:effective-pom -DoutputFile=debug.xml 
+    2) validate versions against the config i guess 
+- fix logging so tht other files log like configgenerator
