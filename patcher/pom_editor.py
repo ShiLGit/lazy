@@ -11,24 +11,24 @@ def find(root, query):
 # update relevant properties such that new version of artId occurring in the dependency is set to fixVersion
 # return True if a dependency was found and processed, False if no such dependency found
 def process_dependencies(dependencies, artId, fixVersion):
-    dependency_found = False
     for dep in dependencies:
         dep_artId = dep.find('m:artifactId', ns).text
         if dep_artId == artId:
-            ver_el = dep.find('m:version', ns).text
+            ver_el = dep.find('m:version', ns)
 
+            if not ver_el:
+                return False
+            
             # is version is set as a property? process accordingly
             version_match = PLACEHOLDER_RE.search(ver_el.text)
             if version_match:
                 property_name = version_match.group(1)
                 prop_el = root.find(f'm:properties/m:{property_name}', ns)
                 prop_el.text = fixVersion
-                dependency_found = True
             else: 
                 ver_el.text = fixVersion
-                dependency_found = True
 
-        return dependency_found
+        return True
             
 
 
@@ -63,7 +63,7 @@ def update_artifact(root, artId, fixVersion):
 
     return deps_updated and depmgmt_updated
 
-# NOTE: VERSIONLESS DECLARATIONS NOT INCLUDED
+# returns list of declared artifacts as [{artId: <>, version: <>}] given the pom root
 def get_declared_dependencies(root):
     depmgmt= root.findall('m:dependencyManagement/m:dependencies/m:dependency', ns)  or []
     dependencies = root.findall('m:dependencies/m:dependency', ns) or []

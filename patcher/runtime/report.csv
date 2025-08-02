@@ -1,0 +1,9 @@
+Image Name,CVE,Component,Package Type,Current Version,Fixed Versions,Severity,Detected By
+vuln-demo:0.1.0,CVE-2020-1234,jackson-databind,maven,2.9.8,2.13.3,Critical,"XRay, Mend"
+vuln-demo:0.1.0,CVE-2018-7654,jackson-annotations,maven,2.9.0,2.10.0,Medium,"Mend, FakeScanX"
+vuln-demo:0.1.0,CVE-2019-8765,commons-fileupload,maven,1.3.2,1.4,High,XRay
+vuln-demo:0.1.0,CVE-2018-9999,commons-io,maven,2.2,2.7,Medium,"FakeScanX"
+vuln-demo:0.1.0,CVE-2021-44228,log4j-core,maven,2.14.0,2.17.1,Critical,"Mend, sneakwatch"
+vuln-demo:0.1.0,CVE-2023-1111,jackson-dataformat-yaml,maven,2.10.0,2.13.4,Medium,"Mend, FakeScanY"
+vuln-demo:0.1.0,CVE-2017-5943,snakeyaml,maven,1.19,1.26,High,"FakeScanX"
+vuln-demo:0.1.0,CVE-2025-22235,spring-web,maven,5.1.2.RELEASE,5.3.30,High,"Mend, XRay"

@@ -1,0 +1,77 @@
+<?xml version='1.0' encoding='utf-8'?>
+<ns0:project xmlns:ns0="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0                               http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <ns0:modelVersion>4.0.0</ns0:modelVersion>
+
+  <ns0:groupId>com.fakecorp</ns0:groupId>
+  <ns0:artifactId>vuln-demo</ns0:artifactId>
+  <ns0:version>0.1.0</ns0:version>
+  <ns0:packaging>jar</ns0:packaging>
+
+  
+  <ns0:properties>
+    <ns0:jackson.version>2.9.8</ns0:jackson.version>
+    <ns0:spring-web.version>5.1.2.RELEASE</ns0:spring-web.version>
+    <ns0:log4j.version>2.14.0</ns0:log4j.version>
+    <ns0:fileupload.version>1.3.2</ns0:fileupload.version>
+    <ns0:commons-lang3.version>3.12.0</ns0:commons-lang3.version>
+  </ns0:properties>
+
+  
+  <ns0:dependencyManagement>
+    <ns0:dependencies>
+      <ns0:dependency>
+        <ns0:groupId>com.fasterxml.jackson.core</ns0:groupId>
+        <ns0:artifactId>jackson-databind</ns0:artifactId>
+        <ns0:version>${jackson.version}</ns0:version>
+      </ns0:dependency>
+      <ns0:dependency>
+        <ns0:groupId>org.springframework</ns0:groupId>
+        <ns0:artifactId>spring-web</ns0:artifactId>
+        <ns0:version>${spring-web.version}</ns0:version>
+      </ns0:dependency>
+      <ns0:dependency>
+        <ns0:groupId>org.apache.logging.log4j</ns0:groupId>
+        <ns0:artifactId>log4j-core</ns0:artifactId>
+        <ns0:version>${log4j.version}</ns0:version>
+      </ns0:dependency>
+    </ns0:dependencies>
+  </ns0:dependencyManagement>
+
+  
+  <ns0:dependencies>
+
+    
+    <ns0:dependency>
+      <ns0:groupId>com.fasterxml.jackson.core</ns0:groupId>
+      <ns0:artifactId>jackson-databind</ns0:artifactId>
+    </ns0:dependency>
+
+    
+    <ns0:dependency>
+      <ns0:groupId>org.springframework</ns0:groupId>
+      <ns0:artifactId>spring-web</ns0:artifactId>
+    </ns0:dependency>
+
+    
+    <ns0:dependency>
+      <ns0:groupId>org.apache.logging.log4j</ns0:groupId>
+      <ns0:artifactId>log4j-core</ns0:artifactId>
+    </ns0:dependency>
+
+    
+    <ns0:dependency>
+      <ns0:groupId>org.apache.commons</ns0:groupId>
+      <ns0:artifactId>commons-lang3</ns0:artifactId>
+      <ns0:version>${commons-lang3.version}</ns0:version>
+    </ns0:dependency>
+
+    
+    <ns0:dependency>
+      <ns0:groupId>commons-fileupload</ns0:groupId>
+      <ns0:artifactId>commons-fileupload</ns0:artifactId>
+      <ns0:version>${fileupload.version}</ns0:version>
+    </ns0:dependency>
+
+  </ns0:dependencies>
+
+</ns0:project>

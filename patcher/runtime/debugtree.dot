@@ -1,0 +1,16 @@
+digraph "com.fakecorp:vuln-demo:jar:0.1.0" { 
+	"com.fakecorp:vuln-demo:jar:0.1.0" -> "com.fasterxml.jackson.core:jackson-databind:jar:2.9.8:compile" ; 
+	"com.fakecorp:vuln-demo:jar:0.1.0" -> "org.springframework:spring-web:jar:5.1.2.RELEASE:compile" ; 
+	"com.fakecorp:vuln-demo:jar:0.1.0" -> "org.apache.logging.log4j:log4j-core:jar:2.14.0:compile" ; 
+	"com.fakecorp:vuln-demo:jar:0.1.0" -> "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:jar:2.10.0:compile" ; 
+	"com.fakecorp:vuln-demo:jar:0.1.0" -> "org.yaml:snakeyaml:jar:1.19:compile" ; 
+	"com.fakecorp:vuln-demo:jar:0.1.0" -> "commons-fileupload:commons-fileupload:jar:1.3.2:compile" ; 
+	"com.fakecorp:vuln-demo:jar:0.1.0" -> "org.apache.commons:commons-lang3:jar:3.12.0:compile" ; 
+	"com.fasterxml.jackson.core:jackson-databind:jar:2.9.8:compile" -> "com.fasterxml.jackson.core:jackson-annotations:jar:2.9.0:compile" ; 
+	"com.fasterxml.jackson.core:jackson-databind:jar:2.9.8:compile" -> "com.fasterxml.jackson.core:jackson-core:jar:2.9.8:compile" ; 
+	"org.springframework:spring-web:jar:5.1.2.RELEASE:compile" -> "org.springframework:spring-beans:jar:5.1.2.RELEASE:compile" ; 
+	"org.springframework:spring-web:jar:5.1.2.RELEASE:compile" -> "org.springframework:spring-core:jar:5.1.2.RELEASE:compile" ; 
+	"org.springframework:spring-core:jar:5.1.2.RELEASE:compile" -> "org.springframework:spring-jcl:jar:5.1.2.RELEASE:compile" ; 
+	"org.apache.logging.log4j:log4j-core:jar:2.14.0:compile" -> "org.apache.logging.log4j:log4j-api:jar:2.14.0:compile" ; 
+	"commons-fileupload:commons-fileupload:jar:1.3.2:compile" -> "commons-io:commons-io:jar:2.2:compile" ; 
+ } 
