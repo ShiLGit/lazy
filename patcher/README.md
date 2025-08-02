@@ -1,0 +1,3 @@
+REAL PATCHER. OTHER FILES ARE OBSOLETE PROBABLY
+
+Run: python3 ./patcher.py
