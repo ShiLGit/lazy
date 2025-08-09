@@ -1,4 +1,4 @@
-import xml.etree.ElementTree as ET
+import lxml.etree as ET
 import re
 ns = {'m': 'http://maven.apache.org/POM/4.0.0'}
 PLACEHOLDER_RE = re.compile(r'\$\{(.*)\}')
@@ -11,13 +11,15 @@ def find(root, query):
 # update relevant properties such that new version of artId occurring in the dependency is set to fixVersion
 # return True if a dependency was found and processed, False if no such dependency found
 def process_dependencies(dependencies, artId, fixVersion):
+    updated = False
     for dep in dependencies:
         dep_artId = dep.find('m:artifactId', ns).text
+        print(f'{dep_artId} matching = {dep_artId==artId}')
         if dep_artId == artId:
-            ver_el = dep.find('m:version', ns)
-
-            if not ver_el:
-                return False
+            ver_el = dep.find('m:version', namespaces=ns) 
+            if ver_el is None:
+                print('ver el is none bye')
+                break
             
             # is version is set as a property? process accordingly
             version_match = PLACEHOLDER_RE.search(ver_el.text)
@@ -25,21 +27,23 @@ def process_dependencies(dependencies, artId, fixVersion):
                 property_name = version_match.group(1)
                 prop_el = root.find(f'm:properties/m:{property_name}', ns)
                 prop_el.text = fixVersion
+                updated = True
             else: 
                 ver_el.text = fixVersion
+                updated = True
 
-        return True
+    return updated
             
 
 
 # map depmgmt artId -> etree element
 def add_override(root, grpId, artId, version):
-    depmgmt = root.find('m:dependencyManagement/m:dependencies/m:dependency', ns)
+    depmgmt = root.find('m:dependencyManagement/m:dependencies', ns)
     parent = None
     if depmgmt != None:
         parent = depmgmt
     else: 
-        parent = root.find('m:dependencies/m:dependency', ns)
+        parent = root.find('m:dependencies', ns)
 
     if parent == None:
         print("FROM ADD_OVERIDE: NO DEPENDENCY OR DEPENDENCY MANAGEMENT NODE FOUND. EXITING")
@@ -61,7 +65,7 @@ def update_artifact(root, artId, fixVersion):
     dependencies = root.findall('m:dependencies/m:dependency', ns)
     deps_updated = process_dependencies(dependencies, artId, fixVersion)
 
-    return deps_updated and depmgmt_updated
+    return deps_updated or depmgmt_updated
 
 # returns list of declared artifacts as [{artId: <>, version: <>}] given the pom root
 def get_declared_dependencies(root):
@@ -97,9 +101,8 @@ def get_declared_dependencies(root):
 if __name__ == '__main__':
     tree = ET.parse('./runtime/pom.xml')
     root = tree.getroot()
-    update_artifact(root, 'spring-web', '2')
+    update_artifact(root, 'spring-boot-starter-web', '9999')
     add_override(root, 'fakegrp', 'fakeart', '30000')
-    ET.register_namespace('','http://maven.apache.org/POM/4.0.0')
     tree.write('out.xml', encoding='utf-8', xml_declaration=True)
     # for child in root:
     #     print(child.tag)
