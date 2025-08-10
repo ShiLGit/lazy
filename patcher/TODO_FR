@@ -34,9 +34,14 @@ URGENT: TREEREADER IS ADDING STRINGS TO ART_NODEMAP? it's supposed dto be a list
 fixed bugs. proceed with patcher flwo
 
 08-02 
-- fix flow of aptching becaise whole thing can just be a search of entire dependency tree rahter than like 3 cases
+fixed flow of aptching becaise whole thing can just be a search of entire dependency tree rahter than like 3 cases
 - need to validate whether ancestor updates have actually fixed the target package 
     -FLOW? 
     1) mvn help:effective-pom -DoutputFile=debug.xml 
     2) validate versions against the config i guess 
 - fix logging so tht other files log like configgenerator
+- ur tree caching and writing out of root is not working. also update-pom might also not be working ffs
+
+08-09 
+fixed bugs probably. cached effect-pom, start on validation step. where to store logic for validation? note that you'll probbaly have to loop until valid so 
+want to put it in compact fx instead of nesting 200 lines

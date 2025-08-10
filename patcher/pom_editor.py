@@ -10,15 +10,14 @@ def find(root, query):
 # HELPER FX: Iterate through all entries in <dependencies> node (passed in as dependencies)
 # update relevant properties such that new version of artId occurring in the dependency is set to fixVersion
 # return True if a dependency was found and processed, False if no such dependency found
-def process_dependencies(dependencies, artId, fixVersion):
+def process_dependencies(dependencies, root, artId, fixVersion):
     updated = False
     for dep in dependencies:
         dep_artId = dep.find('m:artifactId', ns).text
-        print(f'{dep_artId} matching = {dep_artId==artId}')
         if dep_artId == artId:
             ver_el = dep.find('m:version', namespaces=ns) 
             if ver_el is None:
-                print('ver el is none bye')
+                print('FROM POM_WRITER: CANT FIND VERSION NODE IN <DEP>')
                 break
             
             # is version is set as a property? process accordingly
@@ -61,9 +60,9 @@ def add_override(root, grpId, artId, version):
 def update_artifact(root, artId, fixVersion):
     # search artifacts in dependencyManagement
     depmgmt= root.findall('m:dependencyManagement/m:dependencies/m:dependency', ns)
-    depmgmt_updated = process_dependencies(depmgmt, artId, fixVersion)
+    depmgmt_updated = process_dependencies(depmgmt, root, artId, fixVersion)
     dependencies = root.findall('m:dependencies/m:dependency', ns)
-    deps_updated = process_dependencies(dependencies, artId, fixVersion)
+    deps_updated = process_dependencies(dependencies, root, artId, fixVersion)
 
     return deps_updated or depmgmt_updated
 
@@ -86,11 +85,11 @@ def get_declared_dependencies(root):
             # is version is set as a property? process accordingly
             version_match = PLACEHOLDER_RE.search(ver_el.text)
             if version_match:
-                property_name = version_match.group(1)
-                prop_el = root.find(f'm:properties/m:{property_name}', ns)
-                to_add['version'] = prop_el.text
+                    property_name = version_match.group(1)
+                    prop_el = root.find(f'm:properties/m:{property_name}', ns)
+                    to_add['version'] = prop_el.text
             else: 
-                to_add = ver_el.text
+                to_add ['version']= ver_el.text
             
             all_deps.append(to_add)
 
@@ -103,7 +102,9 @@ if __name__ == '__main__':
     root = tree.getroot()
     update_artifact(root, 'spring-boot-starter-web', '9999')
     add_override(root, 'fakegrp', 'fakeart', '30000')
-    tree.write('out.xml', encoding='utf-8', xml_declaration=True)
+
+    tree.write('out.xml', encoding='utf-8', xml_declaration=True, pretty_print=True)
+    
     # for child in root:
     #     print(child.tag)
 
