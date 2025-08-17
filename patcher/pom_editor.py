@@ -7,21 +7,6 @@ PLACEHOLDER_RE = re.compile(r'\$\{(.*)\}')
 def find(root, query):
     return root.find(f'm:{query}', ns)
 
-
-
-def validate_pom(epom_fname, pomconfig):
-    root = ET.parse(epom_fname).getroot()
-    dependencies=root.findall('m:dependencies/m:dependency', ns)
-    for dep in dependencies:
-        artifact = dep.find('m:artifactId', ns)
-        matching_config = pomconfig.get(artifact.text)
-        if matching_config:
-            version = dep.find('m:version', ns).text
-            print(version)
-   # for dep in dependencies: 
-
-    print(dependencies)
-
 # HELPER FX: Iterate through all entries in <dependencies> node (passed in as dependencies)
 # update relevant properties such that new version of artId occurring in the dependency is set to fixVersion
 # return True if a dependency was found and processed, False if no such dependency found

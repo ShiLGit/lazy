@@ -1,6 +1,8 @@
 from treereader import get_tree, print_tree, parse_values
 import configparser
-from configgenerator import prompt_until_valid, generate_config
+from configgenerator import prompt_until_valid, generate_config, normalize_version
+from packaging.version import parse, Version, InvalidVersion
+from rich import print
 import sys
 import os 
 import subprocess
@@ -13,8 +15,30 @@ DIR = "."
 tfname = './runtime/debugtree.dot'
 rfname = './runtime/report.csv'
 cfname = './runtime/config.json'
+ns = {'m': 'http://maven.apache.org/POM/4.0.0'}
+
 # map artifactId to a fixVersion for validation
 validate_config = {}
+
+# check the generated effective-pom at path epom_fname against a validation map {artifactId: targetVersion}
+# return a list of artifacts whose real version undershoots the target version
+def validate_pom(epom_fname, pomconfig):
+    failures = []
+    print('~~~~~~~~~~~~~~~~ STEP X - Validating POM... ~~~~~~~~~~~~~~~~~')
+    root = ET.parse(epom_fname).getroot()
+    dependencies=root.findall('m:dependencies/m:dependency', ns)
+    for dep in dependencies:
+        artifact = dep.find('m:artifactId', ns)
+        target_ver = pomconfig.get(artifact.text)
+        if target_ver:
+            version = dep.find('m:version', ns).text
+            version_normalized = normalize_version(version)
+            target_ver_normalized = normalize_version(target_ver)
+            if version == target_ver or max(set([version_normalized, target_ver_normalized]), key=parse) == version_normalized:
+                print(f'\t[green]Validated - {artifact.text}:{version} is >= configured version of {target_ver}')
+            else: 
+                print(f'\t[red]Failure - {artifact.text}:{version} is <= configured version of {target_ver}')
+                failures.push()
 
 # build tree '
 # run = subprocess.run(['mvn', 'dependency:tree', '-DoutputType=dot', f'-DoutputFile={tfname}'], shell=True)
@@ -67,12 +91,11 @@ for vuln_art in pomconfig.keys():
                 validate_config[vuln_art] = fixVersion
 
             else:
-                # TODO: mvncentral fetcher this instead of making user save. Also ask if this should be cached in the config for future us
+                # TODO: mvncentral fetcher this instead of making user save. Also ask if this should be cached in the config for future use
                 fixVersion = prompt_until_valid(f"An ancestor '{node_vals['artId']}:{node_vals['version']}' of vulnerable pkg '{vuln_art}' was detected in the pom but no configurations exist for it. Enter a fix version yourself: ", lambda input: len(input) > 0)
 
             if fixVersion:
                 print(f'Updating {node_vals['artId']}@{node_vals['version']} -> {fixVersion}')
-                print(root)
                 updated = PE.update_artifact(root, node_vals['artId'], fixVersion)
                 print(f'{node_vals['artId']} updated to {fixVersion} successfully?')
             node = node.get('parent')
@@ -111,5 +134,6 @@ for vuln_art in pomconfig.keys():
 #     fp.writelines(pomlines)
 # # 3: Add direct overrides to the unfixed packages  
 # print('\n\n')
-
-PE.validate_pom('./runtime/check.xml', validate_config)
+failed_updates = validate_pom('./runtime/check.xml', validate_config)
+for artifact in failed_updates:
+    #overwrite otttttt
