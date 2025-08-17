@@ -45,3 +45,11 @@ fixed flow of aptching becaise whole thing can just be a search of entire depend
 08-09 
 fixed bugs probably. cached effect-pom, start on validation step. where to store logic for validation? note that you'll probbaly have to loop until valid so 
 want to put it in compact fx instead of nesting 200 lines
+
+08-16 
+populated new config for validation, todo: check your epom.xml against that. IN THE FUTURE: store configs that indicate 'update X pkg by changing Y pkg' (e.g. APIT?) separately rather than in config.json as well. keep it in a cache or something and resolve the vuln
+pkg shit from within or something. want config.json to be faithful to the original CVE report so that you can validate it against a CVE report instead of polluted custom dependency decisions
+
+============================ EDGE CASES ====================================
+jgit occurs in the report. version format iss unusable fffs
+there's an explicitly declared dependency in a submodule pom.xml, or just local depMgmt, etc. in a submodule that overrides root pom

@@ -1,11 +1,26 @@
 import lxml.etree as ET
 import re
+import pandas as pd
 ns = {'m': 'http://maven.apache.org/POM/4.0.0'}
 PLACEHOLDER_RE = re.compile(r'\$\{(.*)\}')
 # root.find() except with ns bs handled
 def find(root, query):
     return root.find(f'm:{query}', ns)
 
+
+
+def validate_pom(epom_fname, pomconfig):
+    root = ET.parse(epom_fname).getroot()
+    dependencies=root.findall('m:dependencies/m:dependency', ns)
+    for dep in dependencies:
+        artifact = dep.find('m:artifactId', ns)
+        matching_config = pomconfig.get(artifact.text)
+        if matching_config:
+            version = dep.find('m:version', ns).text
+            print(version)
+   # for dep in dependencies: 
+
+    print(dependencies)
 
 # HELPER FX: Iterate through all entries in <dependencies> node (passed in as dependencies)
 # update relevant properties such that new version of artId occurring in the dependency is set to fixVersion
