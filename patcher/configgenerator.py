@@ -133,7 +133,7 @@ def generate_versionmap(rows):
                     missed_cves_print.append(f'{mcve} ({severity})')
                 print(f'\t• [bold blue]{altfv}[/bold blue]; fails to fix [red not bold]{', '.join(missed_cves_print)}[/red not bold]')
             
-            fv = prompt_until_valid(f"Choose a fix version for from above for {currentv} or ENTER to apply no changes: ", lambda input: input in all_fv)
+            fv = prompt_until_valid(f"Choose a fix version for from above for {currentv} or ENTER to apply no changes: ", lambda input: input in all_fv or input.strip() =='')
             fv = fv.strip()
         if len(fv)> 0:
             print(f"Setting [white bold] {pkg_name}:{currentv} [/white bold] to have fix version [white bold]{fv}[/white bold]")
@@ -170,7 +170,6 @@ def generate_config(fname, configfname='./config.json'):
     pprint.pprint(final_config)
     with open(configfname, 'w') as fp:
         json.dump(final_config, fp)
-    
 
 if __name__ == '__main__':
     generate_config(fname='report.csv')
