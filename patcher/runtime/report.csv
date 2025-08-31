@@ -5,3 +5,5 @@ deep-vuln-demo:0.2.0,CVE-2018-7654,log4j-api,maven,2.14.0,2.17.1,High,"Mend"
 deep-vuln-demo:0.2.0,CVE-2019-8765,spring-core,maven,5.1.2.RELEASE,5.3.30,High,XRay
 deep-vuln-demo:0.2.0,CVE-2017-5943,spring-jcl,maven,5.1.2.RELEASE,5.3.30,Medium,"FakeScanX"
 deep-vuln-demo:0.2.0,CVE-2023-1111,slf4j-api,maven,1.7.25,1.7.36,Medium,"Mend, FakeScanY"
+csp-limit-service:4.0.62-4.citi-pilot,CVE-2025-1390,libcap2,debian,2.66-5ubuntu2,1:2.66-5ubuntu2.2,Medium,XRay
+csp-limit-service:4.0.62-4.citi-pilot,CVE-2025-30258,gpgv,debian,2.4.4-2ubuntu17,2.4.4-2ubuntu17.2,Medium,XRay

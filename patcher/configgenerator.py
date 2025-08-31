@@ -172,4 +172,4 @@ def generate_config(fname, configfname='./config.json'):
         json.dump(final_config, fp)
 
 if __name__ == '__main__':
-    generate_config(fname='report.csv')
+    generate_config(fname='test.csv', configfname='test.json')

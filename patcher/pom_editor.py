@@ -1,11 +1,11 @@
 import lxml.etree as ET
 import re
 import pandas as pd
-ns = {'m': 'http://maven.apache.org/POM/4.0.0'}
+from common_consts import NS
 PLACEHOLDER_RE = re.compile(r'\$\{(.*)\}')
 # root.find() except with ns bs handled
 def find(root, query):
-    return root.find(f'm:{query}', ns)
+    return root.find(f'm:{query}', NS)
 
 # HELPER FX: Iterate through all entries in <dependencies> node (passed in as dependencies)
 # update relevant properties such that new version of artId occurring in the dependency is set to fixVersion
@@ -13,9 +13,9 @@ def find(root, query):
 def process_dependencies(dependencies, root, artId, fixVersion):
     updated = False
     for dep in dependencies:
-        dep_artId = dep.find('m:artifactId', ns).text
+        dep_artId = dep.find('m:artifactId', NS).text
         if dep_artId == artId:
-            ver_el = dep.find('m:version', namespaces=ns) 
+            ver_el = dep.find('m:version', namespaces=NS) 
             if ver_el is None:
                 print('FROM POM_WRITER: CANT FIND VERSION NODE IN <DEP>')
                 break
@@ -24,7 +24,7 @@ def process_dependencies(dependencies, root, artId, fixVersion):
             version_match = PLACEHOLDER_RE.search(ver_el.text)
             if version_match:
                 property_name = version_match.group(1)
-                prop_el = root.find(f'm:properties/m:{property_name}', ns)
+                prop_el = root.find(f'm:properties/m:{property_name}', NS)
                 prop_el.text = fixVersion
                 updated = True
             else: 
@@ -37,12 +37,12 @@ def process_dependencies(dependencies, root, artId, fixVersion):
 
 # map depmgmt artId -> etree element
 def add_override(root, grpId, artId, version):
-    depmgmt = root.find('m:dependencyManagement/m:dependencies', ns)
+    depmgmt = root.find('m:dependencyManagement/m:dependencies', NS)
     parent = None
     if depmgmt != None:
         parent = depmgmt
     else: 
-        parent = root.find('m:dependencies', ns)
+        parent = root.find('m:dependencies', NS)
 
     if parent == None:
         print("FROM ADD_OVERIDE: NO DEPENDENCY OR DEPENDENCY MANAGEMENT NODE FOUND. EXITING")
@@ -59,24 +59,24 @@ def add_override(root, grpId, artId, version):
 # Return T/F based on whether or not a dependency was able to be found and updated
 def update_artifact(root, artId, fixVersion):
     # search artifacts in dependencyManagement
-    depmgmt= root.findall('m:dependencyManagement/m:dependencies/m:dependency', ns)
+    depmgmt= root.findall('m:dependencyManagement/m:dependencies/m:dependency', NS)
     depmgmt_updated = process_dependencies(depmgmt, root, artId, fixVersion)
-    dependencies = root.findall('m:dependencies/m:dependency', ns)
+    dependencies = root.findall('m:dependencies/m:dependency', NS)
     deps_updated = process_dependencies(dependencies, root, artId, fixVersion)
 
     return deps_updated or depmgmt_updated
 
 # returns list of declared artifacts as [{artId: <>, version: <>}] given the pom root
 def get_declared_dependencies(root):
-    depmgmt= root.findall('m:dependencyManagement/m:dependencies/m:dependency', ns)  or []
-    dependencies = root.findall('m:dependencies/m:dependency', ns) or []
+    depmgmt= root.findall('m:dependencyManagement/m:dependencies/m:dependency', NS)  or []
+    dependencies = root.findall('m:dependencies/m:dependency', NS) or []
     dependencies.extend(depmgmt)
 
     all_deps = list([])
     for dep in dependencies:
             to_add = dict()
-            to_add['artId'] = dep.find('m:artifactId', ns).text
-            ver_el = dep.find('m:version', ns)
+            to_add['artId'] = dep.find('m:artifactId', NS).text
+            ver_el = dep.find('m:version', NS)
 
             # don't add as declared dep because no version specified?
             if ver_el == None:
@@ -86,7 +86,7 @@ def get_declared_dependencies(root):
             version_match = PLACEHOLDER_RE.search(ver_el.text)
             if version_match:
                     property_name = version_match.group(1)
-                    prop_el = root.find(f'm:properties/m:{property_name}', ns)
+                    prop_el = root.find(f'm:properties/m:{property_name}', NS)
                     to_add['version'] = prop_el.text
             else: 
                 to_add ['version']= ver_el.text
